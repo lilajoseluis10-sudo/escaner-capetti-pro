@@ -95,7 +95,4 @@ if st.session_state.historial:
     if st.button("Limpiar Historial de Hoy"):
         st.session_state.historial = []
         st.session_state.ganadas = 0
-        st.session_state.derrotas = 0
-        st.rerun()
-else:
-    st.info("Inyecta una foto para empezar a construir tu historial de hoy.")
+        st.session_state.derrotas = 
