@@ -1,13 +1,29 @@
-# ===============================
-# NBA SCANNER ELITE — PASO 1
-# ===============================
+import streamlit as st
 import requests
 import statistics
 
-st.header("🏀 Escáner NBA ELITE")
+# ===============================
+# CONFIG
+# ===============================
+st.set_page_config(page_title="Capetti Scanner", layout="centered")
 
-player_name = st.text_input("Jugador NBA")
-line_value = st.text_input("Línea (ej: 49.5 PRA / 25.5 PTS)")
+st.title("Capetti Ultra Scanner")
+st.write("Sistema multicapa estable")
+
+st.write("--------------------------------------------------")
+
+# ===============================
+# FUNCIONES SEGURAS
+# ===============================
+
+def safe_get_json(url):
+    try:
+        r = requests.get(url, timeout=8)
+        if r.status_code == 200:
+            return r.json()
+        return None
+    except:
+        return None
 
 def parse_line(line_text):
     try:
@@ -18,103 +34,112 @@ def parse_line(line_text):
     except:
         return None, None
 
+# ===============================
+# OBTENER DATOS REALES
+# ===============================
+
 def get_player_data(player):
-    try:
-        search_url = f"https://www.balldontlie.io/api/v1/players?search={player}"
-        r = requests.get(search_url, timeout=10)
-        data = r.json()
-        if not data["data"]:
-            return None
-        player_id = data["data"][0]["id"]
-
-        # Temporada
-        stats_url = f"https://www.balldontlie.io/api/v1/season_averages?player_ids[]={player_id}"
-        r2 = requests.get(stats_url, timeout=10)
-        stats = r2.json()["data"]
-        if not stats:
-            return None
-        s = stats[0]
-
-        pts = s["pts"]
-        reb = s["reb"]
-        ast = s["ast"]
-        pra = pts + reb + ast
-        mins = s["min"]
-
-        # Últimos juegos
-        games_url = f"https://www.balldontlie.io/api/v1/stats?player_ids[]={player_id}&per_page=5"
-        r3 = requests.get(games_url, timeout=10)
-        games = r3.json()["data"]
-
-        last_values = []
-        for g in games:
-            if g["min"] is None:
-                continue
-            last_values.append(g["pts"] + g["reb"] + g["ast"])
-
-        if len(last_values) == 0:
-            last_avg = pra
-            consistency = 0
-        else:
-            last_avg = statistics.mean(last_values)
-            consistency = statistics.pstdev(last_values)
-
-        return {
-            "season_pra": pra,
-            "last_avg": last_avg,
-            "minutes": mins,
-            "consistency": consistency
-        }
-
-    except:
+    search = safe_get_json(f"https://www.balldontlie.io/api/v1/players?search={player}")
+    if not search or not search.get("data"):
         return None
 
-if st.button("Escanear NBA"):
+    player_id = search["data"][0]["id"]
+
+    season = safe_get_json(f"https://www.balldontlie.io/api/v1/season_averages?player_ids[]={player_id}")
+    if not season or not season.get("data"):
+        return None
+
+    s = season["data"][0]
+    pts = s.get("pts", 0)
+    reb = s.get("reb", 0)
+    ast = s.get("ast", 0)
+    mins = s.get("min", 30)
+
+    season_pra = pts + reb + ast
+
+    games = safe_get_json(f"https://www.balldontlie.io/api/v1/stats?player_ids[]={player_id}&per_page=5")
+
+    last_values = []
+    if games and games.get("data"):
+        for g in games["data"]:
+            try:
+                val = g.get("pts", 0) + g.get("reb", 0) + g.get("ast", 0)
+                last_values.append(val)
+            except:
+                pass
+
+    if len(last_values) > 0:
+        last_avg = statistics.mean(last_values)
+        risk = statistics.pstdev(last_values) if len(last_values) > 1 else 4
+    else:
+        last_avg = season_pra
+        risk = 6
+
+    return {
+        "season": season_pra,
+        "recent": last_avg,
+        "minutes": mins,
+        "risk": risk
+    }
+
+# ===============================
+# SCANNER NBA ULTRA
+# ===============================
+
+st.header("NBA Ultra Scanner")
+
+player_name = st.text_input("Jugador NBA")
+line_value = st.text_input("Linea (ej: 49.5 PRA)")
+
+if st.button("Escanear"):
 
     if not player_name or not line_value:
-        st.warning("Ingresa jugador y línea")
+        st.warning("Ingresa jugador y linea")
     else:
         line_num, market = parse_line(line_value)
+
         if line_num is None:
-            st.error("Formato inválido. Ej: 49.5 PRA")
+            st.error("Formato incorrecto")
         else:
-            st.write("Analizando datos reales...")
+            st.write("Analizando...")
+
             data = get_player_data(player_name)
 
             if not data:
-                st.error("No se encontraron datos del jugador")
+                st.error("No se encontraron datos")
             else:
-                season = data["season_pra"]
-                recent = data["last_avg"]
+                season = data["season"]
+                recent = data["recent"]
                 mins = data["minutes"]
-                consistency = data["consistency"]
+                risk = data["risk"]
 
-                # Score multicapa
+                # MODELO MULTICAPA
                 score = (
-                    (recent * 0.45) +
-                    (season * 0.35) +
+                    (recent * 0.50) +
+                    (season * 0.30) +
                     (mins * 0.10) -
-                    (consistency * 0.10)
+                    (risk * 0.10)
                 )
 
                 diff = score - line_num
-                confidence = min(max(abs(diff) * 7, 6), 92)
+                confidence = min(max(abs(diff) * 6, 6), 92)
 
-                st.subheader("Resultado Scanner ELITE")
-
-                st.write(f"Promedio temporada: **{round(season,2)}**")
-                st.write(f"Promedio últimos juegos: **{round(recent,2)}**")
-                st.write(f"Minutos promedio: **{mins}**")
-                st.write(f"Consistencia (riesgo): **{round(consistency,2)}**")
+                st.write("Promedio temporada:", round(season,2))
+                st.write("Promedio recientes:", round(recent,2))
+                st.write("Minutos:", mins)
+                st.write("Riesgo:", round(risk,2))
 
                 if diff > 0:
-                    st.success(f"📈 MORE probable ({round(confidence)}%)")
+                    st.success("MORE probable - " + str(round(confidence)) + "%")
                 else:
-                    st.error(f"📉 LESS probable ({round(confidence)}%)")
+                    st.error("LESS probable - " + str(round(confidence)) + "%")
 
-                if consistency > 8:
-                    st.warning("⚠️ Jugador inconsistente — riesgo alto")
-                elif confidence > 75:
-                    st.info("🔥 Pick fuerte")
+                if risk > 9:
+                    st.warning("Jugador inconsistente - riesgo alto")
+                elif confidence > 78:
+                    st.info("Pick fuerte")
                 else:
-                    st.info("Pick estándar")
+                    st.info("Pick normal")
+
+st.write("--------------------------------------------------")
+st.caption("Capetti Ultra Scanner - Version estable")
