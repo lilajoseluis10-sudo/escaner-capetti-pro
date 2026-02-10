@@ -1,43 +1,10 @@
-import streamlit as st
+# ===============================
+# NBA SCANNER ELITE — PASO 1
+# ===============================
 import requests
-from PIL import Image
-import random
+import statistics
 
-# ===============================
-# CONFIG
-# ===============================
-st.set_page_config(page_title="Capetti Scanner", layout="centered")
-
-st.title("🚀 Capetti Pro Scanner")
-st.write("Análisis NBA + Tenis")
-
-st.write("---")
-
-# ===============================
-# TENIS SCANNER (BASE)
-# ===============================
-st.header("🎾 Escáner de Tenis")
-
-uploaded_file = st.file_uploader("Sube captura (Tenis)", type=["png","jpg","jpeg"])
-
-if uploaded_file:
-    image = Image.open(uploaded_file)
-    st.image(image, caption="Imagen cargada", use_container_width=True)
-
-    st.write("Analizando...")
-    prob = random.randint(45, 75)
-
-    if prob > 55:
-        st.success(f"📈 OVER / MORE probable ({prob}%)")
-    else:
-        st.error(f"📉 UNDER / LESS probable ({100 - prob}%)")
-
-st.write("---")
-
-# ===============================
-# NBA SCANNER (ESTABLE)
-# ===============================
-st.header("🏀 Escáner NBA")
+st.header("🏀 Escáner NBA ELITE")
 
 player_name = st.text_input("Jugador NBA")
 line_value = st.text_input("Línea (ej: 49.5 PRA / 25.5 PTS)")
@@ -51,35 +18,54 @@ def parse_line(line_text):
     except:
         return None, None
 
-def get_player_avg(player):
+def get_player_data(player):
     try:
         search_url = f"https://www.balldontlie.io/api/v1/players?search={player}"
         r = requests.get(search_url, timeout=10)
         data = r.json()
-
         if not data["data"]:
             return None
-
         player_id = data["data"][0]["id"]
 
+        # Temporada
         stats_url = f"https://www.balldontlie.io/api/v1/season_averages?player_ids[]={player_id}"
         r2 = requests.get(stats_url, timeout=10)
         stats = r2.json()["data"]
-
         if not stats:
             return None
-
         s = stats[0]
+
         pts = s["pts"]
         reb = s["reb"]
         ast = s["ast"]
+        pra = pts + reb + ast
+        mins = s["min"]
+
+        # Últimos juegos
+        games_url = f"https://www.balldontlie.io/api/v1/stats?player_ids[]={player_id}&per_page=5"
+        r3 = requests.get(games_url, timeout=10)
+        games = r3.json()["data"]
+
+        last_values = []
+        for g in games:
+            if g["min"] is None:
+                continue
+            last_values.append(g["pts"] + g["reb"] + g["ast"])
+
+        if len(last_values) == 0:
+            last_avg = pra
+            consistency = 0
+        else:
+            last_avg = statistics.mean(last_values)
+            consistency = statistics.pstdev(last_values)
 
         return {
-            "PTS": pts,
-            "REB": reb,
-            "AST": ast,
-            "PRA": pts + reb + ast
+            "season_pra": pra,
+            "last_avg": last_avg,
+            "minutes": mins,
+            "consistency": consistency
         }
+
     except:
         return None
 
@@ -89,28 +75,46 @@ if st.button("Escanear NBA"):
         st.warning("Ingresa jugador y línea")
     else:
         line_num, market = parse_line(line_value)
-
         if line_num is None:
             st.error("Formato inválido. Ej: 49.5 PRA")
         else:
-            st.write("Consultando datos reales...")
-            avgs = get_player_avg(player_name)
+            st.write("Analizando datos reales...")
+            data = get_player_data(player_name)
 
-            if not avgs:
+            if not data:
                 st.error("No se encontraron datos del jugador")
             else:
-                player_avg = avgs[market]
+                season = data["season_pra"]
+                recent = data["last_avg"]
+                mins = data["minutes"]
+                consistency = data["consistency"]
 
-                st.write(f"Jugador: **{player_name}**")
-                st.write(f"Promedio temporada: **{round(player_avg,2)}**")
+                # Score multicapa
+                score = (
+                    (recent * 0.45) +
+                    (season * 0.35) +
+                    (mins * 0.10) -
+                    (consistency * 0.10)
+                )
 
-                diff = player_avg - line_num
-                confidence = min(max(abs(diff) * 8, 5), 85)
+                diff = score - line_num
+                confidence = min(max(abs(diff) * 7, 6), 92)
+
+                st.subheader("Resultado Scanner ELITE")
+
+                st.write(f"Promedio temporada: **{round(season,2)}**")
+                st.write(f"Promedio últimos juegos: **{round(recent,2)}**")
+                st.write(f"Minutos promedio: **{mins}**")
+                st.write(f"Consistencia (riesgo): **{round(consistency,2)}**")
 
                 if diff > 0:
                     st.success(f"📈 MORE probable ({round(confidence)}%)")
                 else:
                     st.error(f"📉 LESS probable ({round(confidence)}%)")
 
-st.write("---")
-st.caption("Capetti Scanner — versión estable")
+                if consistency > 8:
+                    st.warning("⚠️ Jugador inconsistente — riesgo alto")
+                elif confidence > 75:
+                    st.info("🔥 Pick fuerte")
+                else:
+                    st.info("Pick estándar")
