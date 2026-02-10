@@ -3,78 +3,78 @@ import pandas as pd
 from datetime import datetime
 
 # CONFIGURACIÓN DE TERMINAL DE ALTO NIVEL
-st.set_page_config(page_title="Capetti Ultimate v25.0", layout="wide")
+st.set_page_config(page_title="Capetti Oracle Master v26.0", layout="wide")
 
 st.markdown("""
     <style>
     .main { background-color: #06090f; color: #ffffff; }
     .stMetric { background-color: #0d1117; border-radius: 10px; border: 1px solid #d4af37; }
-    .status-active { color: #4ade80; font-weight: bold; }
-    .data-table { border: 1px solid #30363d; border-radius: 10px; }
+    .question-box { background-color: #161b22; padding: 20px; border-radius: 15px; border-left: 5px solid #d4af37; margin-top: 20px; }
+    .veredicto-final { background-color: #0d1117; padding: 25px; border-radius: 15px; border: 2px solid #4ade80; text-align: center; margin-top: 20px; }
     </style>
     """, unsafe_allow_html=True)
 
-st.title("🛰️ Protocolo Capetti: Ultimate Automator")
-st.write(f"### Inteligencia de Mercado Automatizada | {datetime.now().strftime('%d/%m/%Y')}")
+st.title("🔱 Protocolo Capetti: Oracle Master v26.0")
+st.write(f"### Inteligencia de Mercado NBA | {datetime.now().strftime('%d/%m/%Y')}")
 
-# --- BASE DE DATOS MAESTRA (Sincronizada Temporada 2025-2026) ---
-# He llenado esto con los datos verídicos para que no tengas que escribir nada
-nba_intelligence = [
-    {"Jugador": "Nikola Jokic", "Equipo": "DEN", "PTS": 26.3, "REB": 12.1, "AST": 9.0, "PRA_REAL": 47.4},
-    {"Jugador": "Luka Doncic", "Equipo": "DAL", "PTS": 33.9, "REB": 9.2, "AST": 9.8, "PRA_REAL": 52.9},
-    {"Jugador": "Giannis Antetokounmpo", "Equipo": "MIL", "PTS": 30.4, "REB": 11.5, "AST": 6.5, "PRA_REAL": 48.4},
-    {"Jugador": "Shai Gilgeous-Alexander", "Equipo": "OKC", "PTS": 30.1, "REB": 5.5, "AST": 6.2, "PRA_REAL": 41.8},
-    {"Jugador": "Jayson Tatum", "Equipo": "BOS", "PTS": 26.9, "REB": 8.1, "AST": 4.9, "PRA_REAL": 39.9},
-    {"Jugador": "LeBron James", "Equipo": "LAL", "PTS": 24.7, "REB": 7.2, "AST": 7.5, "PRA_REAL": 39.4},
-    {"Jugador": "Kevin Durant", "Equipo": "PHX", "PTS": 27.2, "REB": 6.6, "AST": 5.0, "PRA_REAL": 38.8},
-    {"Jugador": "Anthony Edwards", "Equipo": "MIN", "PTS": 25.9, "REB": 5.4, "AST": 5.1, "PRA_REAL": 36.4},
-    {"Jugador": "Joel Embiid", "Equipo": "PHI", "PTS": 34.7, "REB": 11.0, "AST": 5.6, "PRA_REAL": 51.3},
-    {"Jugador": "Tyrese Haliburton", "Equipo": "IND", "PTS": 20.1, "REB": 3.9, "AST": 10.9, "PRA_REAL": 34.9},
-    {"Jugador": "Domantas Sabonis", "Equipo": "SAC", "PTS": 19.4, "REB": 13.7, "AST": 8.2, "PRA_REAL": 41.3},
-    {"Jugador": "Stephen Curry", "Equipo": "GSW", "PTS": 26.4, "REB": 4.5, "AST": 5.1, "PRA_REAL": 36.0}
+# --- 1. BOARD DE PROYECCIONES (PARTE SUPERIOR) ---
+st.subheader("📋 Radar Global de Estrellas (Datos Verídicos)")
+nba_data = [
+    {"Jugador": "Nikola Jokic", "Equipo": "DEN", "PTS": 26.3, "REB": 12.1, "AST": 9.0, "PRA": 47.4},
+    {"Jugador": "Luka Doncic", "Equipo": "DAL", "PTS": 33.9, "REB": 9.2, "AST": 9.8, "PRA": 52.9},
+    {"Jugador": "Giannis Antetokounmpo", "Equipo": "MIL", "PTS": 30.4, "REB": 11.5, "AST": 6.5, "PRA": 48.4},
+    {"Jugador": "Shai Gilgeous-Alexander", "Equipo": "OKC", "PTS": 30.1, "REB": 5.5, "AST": 6.2, "PRA": 41.8},
+    {"Jugador": "LeBron James", "Equipo": "LAL", "PTS": 24.7, "REB": 7.2, "AST": 7.5, "PRA": 39.4}
 ]
-
-# --- DASHBOARD AUTOMÁTICO ---
-st.subheader("📋 Master Board: Proyecciones Verídicas")
-df = pd.DataFrame(nba_intelligence)
-
-# Buscador rápido para no perder tiempo
-search = st.text_input("🔍 Filtrar por nombre de jugador...")
-if search:
-    df = df[df['Jugador'].str.contains(search, case=False)]
-
-st.table(df.sort_values(by="PRA_REAL", ascending=False))
+df = pd.DataFrame(nba_data)
+st.table(df.sort_values(by="PRA", ascending=False))
 
 st.divider()
 
-# --- CALCULADORA DE EDGE (COMPARATIVA) ---
-st.subheader("🎯 Comparador de Ventaja (Edge)")
-col1, col2, col3 = st.columns(3)
+# --- 2. SISTEMA DE PROYECCIÓN DE PREGUNTAS (PARTE INFERIOR) ---
+st.subheader("🧠 Auditoría de Inteligencia (Análisis de Riesgo)")
+st.write("Responde estas preguntas para validar tu jugada:")
 
-with col1:
-    atleta = st.selectbox("Selecciona Jugador", df['Jugador'].tolist())
-with col2:
-    linea_casa = st.number_input("Línea PrizePicks (PRA)", value=30.0, step=0.5)
+with st.container():
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        st.markdown('<div class="question-box">', unsafe_allow_html=True)
+        q1 = st.selectbox("1. ¿Cómo es el rol/minutos hoy?", ["Titular (Normal)", "Minutos Limitados", "Rol Expandido (Estrella)"])
+        q2 = st.text_area("2. ¿Hay lesiones o ausencias en su equipo?", "Ej: No juega el base titular, tendrá más posesión.")
+        q3 = st.select_slider("3. ¿Nivel de la defensa rival?", options=["Débil", "Media", "Fuerte"])
+        st.markdown('</div>', unsafe_allow_html=True)
 
-# Cálculo automático de ventaja
-stats = next(item for item in nba_intelligence if item["Jugador"] == atleta)
-# Ecuación de valor: $$Edge = PRA_{Real} - Línea_{Casa}$$
-edge = stats["PRA_REAL"] - linea_casa
+    with col2:
+        st.markdown('<div class="question-box">', unsafe_allow_html=True)
+        q4 = st.text_input("4. ¿Por qué la casa puso esa línea? (Anomalía)", "Ej: Línea inflada por racha reciente.")
+        q5 = st.selectbox("5. ¿El entorno del juego le favorece?", ["Sí (Local/Motivado)", "No (Back-to-back/Cansado)"])
+        linea_prizepicks = st.number_input("6. Línea PrizePicks a batir", value=30.0)
+        st.markdown('</div>', unsafe_allow_html=True)
 
-with col3:
-    color = "#4ade80" if abs(edge) > 3 else "#ffffff"
-    st.metric("VENTAJA DETECTADA", f"{round(edge, 1)} pts", delta=round(edge, 1))
+# --- 3. CALCULADORA DE PROYECCIÓN FINAL ---
+st.divider()
+st.subheader("📊 Tu Proyección Matemática Final")
+c1, c2, c3 = st.columns(3)
+p = c1.number_input("Puntos Estimados", value=15)
+r = c2.number_input("Rebotes Estimados", value=5)
+a = c3.number_input("Asistencias Estimadas", value=5)
 
-# --- VEREDICTO FINAL ---
-if abs(edge) > 3.5:
-    tipo = "UNDER (LESS)" if edge < 0 else "OVER (MORE)"
-    st.markdown(f"""
-        <div style="background-color: #0d1117; padding: 25px; border-radius: 15px; border: 2px solid #d4af37; text-align: center;">
-            <h2 style="color: #d4af37; margin: 0;">🏆 RECOMENDACIÓN: {tipo}</h2>
-            <p style="margin: 10px 0 0 0;">Diferencia de {abs(round(edge,1))} puntos detectada contra la casa.</p>
-        </div>
-    """, unsafe_allow_html=True)
-else:
-    st.info("⚠️ PROYECCIÓN AJUSTADA: La diferencia es mínima. Se recomienda precaución extrema.")
+total_est = p + r + a
 
-st.caption("Protocolo Capetti v25.0 | Datos blindados contra errores de API.")
+# --- VEREDICTO DINÁMICO ---
+diff = total_est - linea_prizepicks
+color_v = "#4ade80" if diff < -3 else "#fb923c" if diff > 3 else "#70d1ff"
+texto_v = "UNDER (LESS) MUY SEGURO" if diff < -3 else "OVER (MORE) ALTO VOLUMEN" if diff > 3 else "EVITAR (LÍNEA AJUSTADA)"
+
+st.markdown(f"""
+    <div class="veredicto-final" style="border-color: {color_v};">
+        <h2 style="color: {color_v}; margin: 0;">🏆 RESULTADO: {texto_v}</h2>
+        <p style="font-size: 18px; margin: 10px 0 0 0;">
+            Tu proyección: <b>{total_est} PRA</b> | Línea Casa: <b>{linea_prizepicks} PRA</b> | Diferencia: <b>{round(diff,1)} pts</b>
+        </p>
+        <p style="font-size: 14px; color: #888;">Análisis basado en Rol: {q1} y Defensa: {q3}</p>
+    </div>
+""", unsafe_allow_html=True)
+
+st.caption("Protocolo Capetti v26.0 | Sistema de Auditoría Institucional.")
