@@ -1,4 +1,6 @@
 streamlit
-pytesseract
-Pillow
 pandas
+requests
+pytesseract
+opencv-python-headless
+pillow
